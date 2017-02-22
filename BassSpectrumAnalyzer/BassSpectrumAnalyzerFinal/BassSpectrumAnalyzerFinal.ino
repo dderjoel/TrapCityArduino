@@ -41,7 +41,7 @@ int ledsNumber[ROWS] = {
 //0xFF7F00,       
 //0xFF0000
 //};
-CRGB colors[colorAmount] = {
+CRGB colors[COLOR_AMOUNT]{
 	0xFF8000,
 	0x80FF00,       
 	0x8000FF,       
