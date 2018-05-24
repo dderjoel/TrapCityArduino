@@ -1,8 +1,8 @@
 #include <FastLED.h>
-#define NUM_LEDS 240
+#define NUM_LEDS 216
 int analogPin = 0;
 int strobePin = 2;
-int resetPin = 3;
+int resetPin = 5;
 #define LEDSPIN 10
 
 int values[7];
@@ -20,13 +20,16 @@ CRGB leds[NUM_LEDS];
  */
 
 /*this is where the row of 15 leds stars on the whole strip*/
-  int ledsNumber[6]= {
-  227,
-  186,
-  140,
+  int ledsNumber[9]= {
+  192,
+  168,
+  144,
+  120,
   96,
-  53,
-  3
+  72,
+  48,
+  24,
+  0
   };
 
 /*some Rainbow Colors */
@@ -66,59 +69,59 @@ void setup() {
 		leds[i]=CRGB::Black;
 	}
 
-	for(int i = 0; i<6;i++){
-		delay(10);
+	for(int i = 0; i<9;i++){
+		delay(30);
 		leds[ledsNumber[i]]=CRGB::White;
 		FastLED.show();
 	}
 
-	delay(1000);
+	delay(10000);
 }
 
 void loop() {
-	int  values13[13];
+	int  values23[23];
 	int a=0;	
 	int t = 280;
-	while(a<13)
-		values13[a++]=0;
+	while(a<23)
+		values23[a++]=0;
 
 	digitalWrite(resetPin, HIGH);
 	digitalWrite(resetPin, LOW);
-	for(int i=0;i<13;i+=2){
+	for(int i=0;i<23;i+=2){
 		digitalWrite(strobePin, LOW);
 		delay(1);
 		int val = analogRead(analogPin);
 		val = val < 10 ? 0 : val > t ? t : val;
-		val = val*6/t;
-		values13[i] =val; 
+		val = val*9/t;
+		values23[i] =val; 
 		digitalWrite(strobePin, HIGH);
-		//Serial.print(values13[i],DEC);
+		//Serial.print(values23[i],DEC);
 		//Serial.print("\t");
 	}
 	//Serial.println("next it.");
 	
 	/*interpolate*/
-	for(int i=1;i<12; i+=2){
-	//	Serial.println(values13[i],DEC);
-		values13[i] = (values13[i-1] + values13[i+1])/ 2 ;
-	//	Serial.println(values13[i],DEC);
+	for(int i=1;i<21; i+=2){
+	//	Serial.println(values23[i],DEC);
+		values23[i] = (values23[i-1] + values23[i+1])/ 2 ;
+	//	Serial.println(values23[i],DEC);
  	}	
-	for(int freq=0; freq < 13; freq++){
-		if(values13[freq]>0){
-			for(int depth = 0 ; depth < values13[freq]-1; depth++)
+	for(int freq=0; freq < 23; freq++){
+		if(values23[freq]>0){
+			for(int depth = 0 ; depth < values23[freq]-1; depth++)
 				leds[ledsNumber[depth] + freq] = colors[colorPointer];
 
-			leds[ledsNumber[values13[freq]-1]+freq] = colors[colorPointer == 0 ? 5 : colorPointer - 1 ];//0x00FF00;
+			leds[ledsNumber[values23[freq]-1]+freq] = colors[colorPointer == 0 ? 5 : colorPointer - 1 ];//0x00FF00;
 		}	
-		if(values13[freq]<6)
-			for(int depth = values13[freq] ; depth < 6; depth++)
+		if(values23[freq]<9)
+			for(int depth = values23[freq] ; depth < 9; depth++)
 				leds[ledsNumber[depth] + freq] = CRGB::Black;
 	}
 	FastLED.show();
 
 	int b=0;
 	while(b<4)
-		if(values13[b++]>4 && loopCounter<60){	
+		if(values23[b++]>4 && loopCounter<60){	
 			if(colorPointer==6)
 				colorPointer=0;
 			else
