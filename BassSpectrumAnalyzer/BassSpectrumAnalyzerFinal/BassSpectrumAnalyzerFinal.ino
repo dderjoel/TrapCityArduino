@@ -8,6 +8,7 @@ CRGB leds[NUM_LEDS];
 #define LEDSPIN 10
 int analogPin = 0;
 int analogThreasholdPin = 1;
+#define THREASHOLD_DEFAULT 400
 
 int strobePin = 2;
 int resetPin = 5;
@@ -80,7 +81,7 @@ void setup() {
 	for (int i = 0; i < NUM_LEDS; i++){
 		leds[i]=CRGB::Blue;
 		FastLED.show();
-		delay(30);
+		delay(5);
 		leds[i]=CRGB::Black;
 	}
 	delay(1000);
@@ -97,17 +98,17 @@ void setup() {
 		0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,
 		0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,
 		0,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0
-	}
+	};
 	for (int i = 0; i < NUM_LEDS; i++){
-		if logo[i]
+		if (logo[i])
 			leds[i]=CRGB::Blue;
 		else
 			leds[i]=CRGB::Black;
 	}
 	FastLED.show();
-	delay(1000);
+	delay(2000);
 	for (int i = 0; i < NUM_LEDS; i++){
-		if logo[i]
+		if (logo[i])
 			leds[i]=CRGB::Black;
 		else
 			leds[i]=CRGB::Blue;
@@ -126,7 +127,7 @@ void loop() {
 	 * Threashold value
 	 */
 	int t = analogRead(analogThreasholdPin);
-	t = t ? t : 280; //default
+	t = t ? t : THREASHOLD_DEFAULT; //default
 
 	/*
 	 * init the array
