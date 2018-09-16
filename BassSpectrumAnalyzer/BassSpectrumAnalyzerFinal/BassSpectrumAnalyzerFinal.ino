@@ -1,16 +1,17 @@
 #include <FastLED.h>
 
-#define NUM_LEDS 240
-#define ROWS 8 //rows of LEDs
+#define NUM_LEDS 216
+#define ROWS 9 //rows of LEDs
 #define COLS NUM_LEDS/ROWS
 CRGB leds[NUM_LEDS];
 
 #define LEDSPIN 10
 int analogPin = 0;
 int analogThreasholdPin = 1;
+#define THREASHOLD_DEFAULT 400
 
 int strobePin = 2;
-int resetPin = 3;
+int resetPin = 5;
 
 /* Colors */
 #define COLOR_AMOUNT 7
@@ -21,14 +22,15 @@ unsigned int loopCounter=8; //toAvoid, that the colors are changed to fast.
 
 /*this is where the row of 15 leds stars on the whole strip*/
 int ledsNumber[ROWS] = {
-	0,
-	30,
-	60,
-	90,
+	192,
+	168,
+	144,
 	120,
-	150,
-	180,
-	210
+	96,
+	72,
+	48,
+	24,
+	0
 };
 
 /*some Rainbow Colors */
@@ -79,11 +81,40 @@ void setup() {
 	for (int i = 0; i < NUM_LEDS; i++){
 		leds[i]=CRGB::Blue;
 		FastLED.show();
-		delay(1);
+		delay(5);
 		leds[i]=CRGB::Black;
 	}
 	delay(1000);
-
+	
+	/*
+	 * DieBass logo
+	 */
+	int logo[NUM_LEDS] = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,1,0,0,0,1,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,
+		0,1,1,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,
+		0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,
+		0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,
+		0,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0
+	};
+	for (int i = 0; i < NUM_LEDS; i++){
+		if (logo[i])
+			leds[i]=CRGB::Blue;
+		else
+			leds[i]=CRGB::Black;
+	}
+	FastLED.show();
+	delay(2000);
+	for (int i = 0; i < NUM_LEDS; i++){
+		if (logo[i])
+			leds[i]=CRGB::Black;
+		else
+			leds[i]=CRGB::Blue;
+	}
+	FastLED.show();
+	delay(1000);
 }
 
 void loop() {
@@ -96,7 +127,7 @@ void loop() {
 	 * Threashold value
 	 */
 	int t = analogRead(analogThreasholdPin);
-	t = t ? t : 280; //default
+	t = t ? t : THREASHOLD_DEFAULT; //default
 
 	/*
 	 * init the array
