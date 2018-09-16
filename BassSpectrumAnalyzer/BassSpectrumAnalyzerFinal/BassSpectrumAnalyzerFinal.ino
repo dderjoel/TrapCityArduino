@@ -5,13 +5,13 @@
 #define COLS NUM_LEDS/ROWS
 CRGB leds[NUM_LEDS];
 
-#define LEDSPIN 10
+#define LEDSPIN 12
 int analogPin = 0;
 int analogThreasholdPin = 1;
 #define THREASHOLD_DEFAULT 400
 
-int strobePin = 2;
-int resetPin = 5;
+int strobePin = 10;
+int resetPin = 11;
 
 /* Colors */
 #define COLOR_AMOUNT 7
@@ -53,7 +53,7 @@ CRGB colors[COLOR_AMOUNT]{
 	0x4040FF
 };
 
-void setup() {
+void setupSpectrum() {
 	/*
 	 * itit the LEDs
 	 */
@@ -117,7 +117,7 @@ void setup() {
 	delay(1000);
 }
 
-void loop() {
+void loopSpectrum() {
 	/*
 	 * will contain mapped values
 	 */
