@@ -53,7 +53,7 @@ CRGB colors[COLOR_AMOUNT]{
 	0x4040FF
 };
 
-void setupSpectrum() {
+void setup() {
 	/*
 	 * itit the LEDs
 	 */
@@ -117,7 +117,7 @@ void setupSpectrum() {
 	delay(1000);
 }
 
-void loopSpectrum() {
+void loop() {
 	/*
 	 * will contain mapped values
 	 */
