@@ -29,8 +29,8 @@ const int color_amount = 7;
 int color_pointer = 0;
 
 /* Loop */
-const int color_loop_threashold=60; 
-unsigned int loopCounter = 8; //toAvoid, that the colors are changed to fast.
+const int color_loop_threashold=30; 
+unsigned int loop_counter = 8; //toAvoid, that the colors are changed to fast.
 const int bass_threashold = rows-2;
 
 CRGB colors[color_amount]{
@@ -98,13 +98,13 @@ void requestLedState() {
   for (int i=0; i<cols; i++) {
     led_states.data[i] = Wire.read();
     #ifdef DEBUG
-    Serial.print(" ");
-    Serial.print(led_states.data[i]);
-    Serial.print(" ");
+    //Serial.print(" ");
+    //Serial.print(led_states.data[i]);
+    //Serial.print(" ");
     #endif
   }
   #ifdef DEBUG
-  Serial.println("");
+  //Serial.println("");
   #endif
 }
 
@@ -150,21 +150,30 @@ void loop() {
 	}
 	FastLED.show();
 
-	
 	/*
-	 * move colorpointer, if the first two bands exceed threashold
+	 * move colorpointer, if the first eight bands exceed threashold
 	 */
-	for(int i=0; i<2; i++)
-		if(led_states.bands[i++] > bass_threashold && loopCounter < color_loop_threashold){
-			if(color_pointer == color_amount)
-				color_pointer = 0;
-			else
-				color_pointer++;
-			loopCounter = 2 + loopCounter * 2;
-			break;
+	for(int i=0; i<8; i++)
+		if(led_states.bands[i] > bass_threashold) {
+		  if(loop_counter > color_loop_threashold){
+			  if(color_pointer >= color_amount)
+				  color_pointer = 0;
+			  else
+				  color_pointer++;
+			  loop_counter = 1;
+			  break;
+		  }
+      //
+      else loop_counter+=2;
 		}
-	if(loopCounter > 0)
-		loopCounter--;
-  
-  delay(30);
+
+  if(loop_counter>0)
+    loop_counter--;
+
+  #ifdef DEBUG
+  Serial.print("loop_counter: ");
+  Serial.println(loop_counter);
+  #endif
+
+  delay(5);
 }
