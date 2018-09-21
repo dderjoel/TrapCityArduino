@@ -125,7 +125,7 @@ void waitForMusic() {
     requestLedState();
     /* check all bands */
     for(int band=0; band<cols; band++) {
-      if(led_states.bands[band] > 0)
+      if(led_states.bands[band] > 1)
         return;
     }
     delay(100);
