@@ -3,6 +3,7 @@
 
 //#define DEBUG
 
+/* definition of LED grid */
 const int cols = 24;
 const int rows = 9;
 const int num_leds = rows*cols;
@@ -20,19 +21,23 @@ int ledsNumber[rows] = {
   0
 };
 
+/* Array to story LED CRGB values */
 CRGB leds[num_leds];
 
+/* FastLED library config */
 const int leds_pin = 10;
+const int led_brightness = 10;
 
 /* Colors */
 const int color_amount = 7;
 int color_pointer = 0;
 
-/* Loop */
-const int color_loop_threashold=30; 
+/* Color Loop */
+const int color_loop_threashold=60; 
 unsigned int loop_counter = 8; //toAvoid, that the colors are changed to fast.
 const int bass_threashold = rows-2;
 
+/* definition of all colors used in the loop */
 CRGB colors[color_amount]{
 	0xFF8000,
 	0x80FF00,       
@@ -43,14 +48,16 @@ CRGB colors[color_amount]{
 	0x4040FF
 };
 
+/* data type for state coming over i2c */
 union band_states {
   uint8_t bands[cols];
   byte data[cols];
 } led_states;
 
+/* function initialises display and prints welcome message */
 void initDisplay() {
   FastLED.addLeds<WS2812B, leds_pin, GRB>(leds, num_leds); 
-  FastLED.setBrightness(10);
+  FastLED.setBrightness(led_brightness);
    /*
    * Led check
    */
@@ -63,7 +70,7 @@ void initDisplay() {
   delay(500);
   
   /*
-   * DieBass logo
+   * Bass logo
    */
   int logo[num_leds] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -83,6 +90,7 @@ void initDisplay() {
   }
   FastLED.show();
   delay(2000);
+  /* print logo inverted again for LED sanity check */
   for (int i = 0; i < num_leds; i++){
     if (logo[i])
       leds[i]=CRGB::Black;
@@ -93,18 +101,19 @@ void initDisplay() {
   delay(1000);
 }
 
+/* function to request current state of LEDs over i2c */
 void requestLedState() {
   Wire.requestFrom(0, cols);
   for (int i=0; i<cols; i++) {
     led_states.data[i] = Wire.read();
     #ifdef DEBUG
-    //Serial.print(" ");
-    //Serial.print(led_states.data[i]);
-    //Serial.print(" ");
+    Serial.print(" ");
+    Serial.print(led_states.data[i]);
+    Serial.print(" ");
     #endif
   }
   #ifdef DEBUG
-  //Serial.println("");
+  Serial.println("");
   #endif
 }
 
@@ -127,14 +136,10 @@ void setup() {
 
 void loop() {
 
-  /*
-   * request new state
-   */
+  /* request new state */
   requestLedState();
 
-	/*
-	 * light the LEDs
-	 */
+	/* light the LEDs */
 	for(int band=0; band<cols; band++){
     // light up the bars
 		if((led_states.bands[band]>0) && (led_states.bands[band]<=rows)) {
@@ -150,9 +155,7 @@ void loop() {
 	}
 	FastLED.show();
 
-	/*
-	 * move colorpointer, if the first eight bands exceed threashold
-	 */
+	/* move colorpointer, if the first eight bands exceed threashold */
 	for(int i=0; i<8; i++)
 		if(led_states.bands[i] > bass_threashold) {
 		  if(loop_counter > color_loop_threashold){
@@ -163,7 +166,7 @@ void loop() {
 			  loop_counter = 1;
 			  break;
 		  }
-      //
+      /* increase loop_counter by 2 because of decrease below */
       else loop_counter+=2;
 		}
 
