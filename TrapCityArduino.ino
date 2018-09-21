@@ -27,6 +27,8 @@ CRGB leds[num_leds];
 /* FastLED library config */
 const int leds_pin = 10;
 const int led_brightness = 10;
+/* Pin for potentiometer to adjust brightness */
+const int brightnessThreasholdPin = 1;
 
 /* Colors */
 const int color_amount = 7;
@@ -68,7 +70,7 @@ void initDisplay() {
     leds[i]=CRGB::Black;
   }
   delay(500);
-  
+  adjustBrightness();
   /*
    * Bass logo
    */
@@ -82,14 +84,6 @@ void initDisplay() {
     0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,
     0,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0
   };
-  for (int i = 0; i < num_leds; i++){
-    if (logo[i])
-      leds[i]=CRGB::Blue;
-    else
-      leds[i]=CRGB::Black;
-  }
-  FastLED.show();
-  delay(2000);
   /* print logo inverted again for LED sanity check */
   for (int i = 0; i < num_leds; i++){
     if (logo[i])
@@ -99,6 +93,14 @@ void initDisplay() {
   }
   FastLED.show();
   delay(1000);
+  for (int i = 0; i < num_leds; i++){
+    if (logo[i])
+      leds[i]=CRGB::Blue;
+    else
+      leds[i]=CRGB::Black;
+  }
+  FastLED.show();
+  delay(2000);
 }
 
 /* function to request current state of LEDs over i2c */
@@ -117,9 +119,32 @@ void requestLedState() {
   #endif
 }
 
+void waitForMusic() {
+  while(1) {
+    /* request new state */
+    requestLedState();
+    /* check all bands */
+    for(int band=0; band<cols; band++) {
+      if(led_states.bands[band] > 0)
+        return;
+    }
+    delay(100);
+  }
+}
+
+void adjustBrightness() {
+  /* map 0 - 1023 -> 0 - 255 */
+  int val = analogRead(brightnessThreasholdPin) / 4;
+  /* if pulldown resistor sets pin to ground just go with default brightness */
+  if (val < 1) return;
+  if (val > 255) val = 255;
+  FastLED.setBrightness(val);
+}
+
 void setup() {
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
+  pinMode(brightnessThreasholdPin, INPUT);
   #ifdef DEBUG
   delay(1000);
   Serial.begin(9600);
@@ -132,12 +157,15 @@ void setup() {
   requestLedState();
   //Indicate Setup done
   digitalWrite(13, HIGH);
+  waitForMusic();
 }
 
 void loop() {
 
   /* request new state */
   requestLedState();
+
+  adjustBrightness();
 
 	/* light the LEDs */
 	for(int band=0; band<cols; band++){
