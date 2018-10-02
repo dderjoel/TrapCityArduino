@@ -1,206 +1,280 @@
 #include <FastLED.h>
+#include <Wire.h>
 
-#define NUM_LEDS 216
-#define ROWS 9 //rows of LEDs
-#define COLS NUM_LEDS/ROWS
-CRGB leds[NUM_LEDS];
+//#define DEBUG
 
-#define LEDSPIN 12
-int analogPin = 0;
-int analogThreasholdPin = 1;
-#define THREASHOLD_DEFAULT 400
-
-int strobePin = 10;
-int resetPin = 11;
-
-/* Colors */
-#define COLOR_AMOUNT 7
-int colorPointer=0;
-/* Loop */
-#define LOOP_THREASHOLD 60 
-unsigned int loopCounter=8; //toAvoid, that the colors are changed to fast.
+/* definition of LED grid */
+const int cols = 24;
+const int rows = 9;
+const int num_leds = rows*cols;
 
 /*this is where the row of 15 leds stars on the whole strip*/
-int ledsNumber[ROWS] = {
-	192,
-	168,
-	144,
-	120,
-	96,
-	72,
-	48,
-	24,
-	0
+int ledsNumber[rows] = {
+  192,
+  168,
+  144,
+  120,
+  96,
+  72,
+  48,
+  24,
+  0
 };
 
-/*some Rainbow Colors */
-//CRGB colors[7] = {
-//0x9400D3,
-//0x4B0082,       
-//0x0000FF,       
-//0x00FF00,       
-//0xFFFF00,       
-//0xFF7F00,       
-//0xFF0000
-//};
-CRGB colors[COLOR_AMOUNT]{
+/*
+ * Bass logo
+ */
+int logo[num_leds] = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,1,0,0,0,1,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,
+  0,1,1,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,
+  0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,
+  0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,
+  0,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0
+};
+unsigned const int silence_threashold = 500;
+unsigned int silence_counter = 0;
+bool silence = false;
+
+/* Array to story LED CRGB values */
+CRGB leds[num_leds];
+
+/* FastLED library config */
+const int leds_pin = 5;
+int led_brightness = 50;
+
+/* Pin for potentiometer to adjust brightness */
+const int brightnessThreasholdPin = 1;
+
+/* Colors */
+const int color_amount = 7;
+int color_pointer = 0;
+
+/* Color Loop */
+const int color_loop_threashold=30; 
+unsigned int loop_counter = 8; //toAvoid, that the colors are changed to fast.
+const int bass_threashold = rows-2;
+
+/* definition of all colors used in the loop */
+CRGB colors[color_amount]{
 	0xFF8000,
 	0x80FF00,       
 	0x8000FF,       
 	0xFF0000,       
 	0x00FF80,       
-	0x0080FF,       
+	0xFFFF00,       
 	0x4040FF
 };
 
+/* data type for state coming over i2c */
+union band_states {
+  uint8_t bands[cols];
+  byte data[cols];
+} led_states;
+
+/* function initialises display and prints welcome message */
+void initDisplay() {
+  FastLED.addLeds<WS2812B, leds_pin, GRB>(leds, num_leds);
+  adjustBrightness();
+   /*
+   * Led check
+   */
+  for (int i = 0; i < num_leds; i++){
+    leds[i]=CRGB::Blue;
+    FastLED.show();
+    delay(5);
+    leds[i]=CRGB::Black;
+  }
+  delay(500);
+  adjustBrightness();
+  
+  /* print logo inverted again for LED sanity check */
+  for (int i = 0; i < num_leds; i++){
+    if (logo[i])
+      leds[i]=CRGB::Black;
+    else
+      leds[i]=CRGB::Blue;
+  }
+  FastLED.show();
+  delay(1000);
+  showLogo();
+  delay(2000);
+}
+
+void showLogo(){
+  for (int i = 0; i < num_leds; i++){
+    if (logo[i])
+      leds[i]=CRGB::Blue;
+    else
+      leds[i]=CRGB::Black;
+  }
+  FastLED.show();
+}
+
+/* function to request current state of LEDs over i2c */
+void requestLedState() {
+  Wire.requestFrom(0, cols);
+  for (int i=0; i<cols; i++) {
+    led_states.data[i] = Wire.read();
+    #ifdef DEBUG
+    Serial.print(" ");
+    Serial.print(led_states.data[i]);
+    Serial.print(" ");
+    #endif
+  }
+  #ifdef DEBUG
+  Serial.println("");
+  #endif
+}
+
+void waitForMusic() {
+  bool brightness_increase = false;
+  unsigned int brightness_cur = 0;
+  float brightness_increase_delay = ((255 / led_brightness) - 1) * 10;
+  unsigned int brightness_increase_delay_count = 0;
+  unsigned int request_delay_counter = 50;
+  #ifdef DEBUG
+  bool led_state = true;
+  #endif
+  
+  while(1) {
+    if (request_delay_counter > 49) {
+      request_delay_counter = 0;
+      /* request new state */
+      requestLedState();
+      /* check all bands */
+      for(int band=0; band<cols; band++) {
+        if(led_states.bands[band] > 1){
+          FastLED.setBrightness(led_brightness);
+          return;
+        }
+      }
+    } else request_delay_counter++;
+
+    adjustBrightness();
+    if (led_brightness > 10) {
+      brightness_increase_delay = ((255 / led_brightness) - 1) * 10;
+      if (brightness_increase_delay_count > ((int)brightness_increase_delay)) {
+        brightness_increase_delay_count = 0;
+        if (brightness_cur < 2)
+          brightness_increase = true;
+        else if (brightness_cur > (led_brightness - 2))
+          brightness_increase = false;
+    
+        if (brightness_increase)
+          brightness_cur += 2;
+        else
+          brightness_cur -= 2;
+    
+        FastLED.setBrightness(brightness_cur);
+        showLogo();
+
+        #ifdef DEBUG
+        if(led_state) digitalWrite(13, HIGH);
+        else digitalWrite(13, LOW);
+        led_state = !led_state;
+        #endif
+        
+      }
+      else
+        brightness_increase_delay_count++;
+    } else {
+      FastLED.setBrightness(led_brightness);
+      showLogo();
+    }
+      
+    delay(1);
+  }
+}
+
+void clearDisplay() {
+  for (int i = 0; i < num_leds; i++)
+    leds[i]=CRGB::Black;
+}
+
+void adjustBrightness() {
+  /* map 0 - 1023 -> 0 - 255 */
+  int val = analogRead(brightnessThreasholdPin) / 4;
+  /* if pulldown resistor sets pin to ground just go with default brightness */
+  if (val < 1) return;
+  if (val > 255) val = 255;
+  led_brightness = val;
+  FastLED.setBrightness(val);
+}
+
 void setup() {
-	/*
-	 * itit the LEDs
-	 */
-	FastLED.addLeds<WS2812B, LEDSPIN>(leds, NUM_LEDS); 
-	FastLED.setBrightness(10);
-
-	/*
-	 * init the Arduino Pins
-	 */
-	pinMode(analogPin, INPUT);
-	pinMode(analogThreasholdPin, INPUT);
-	pinMode(strobePin, OUTPUT);
-	pinMode(resetPin, OUTPUT);
-	pinMode(LEDSPIN, OUTPUT);
-
-	/*
-	 * init the MSGEQ7
-	 */
-	digitalWrite(resetPin, LOW);
-	digitalWrite(strobePin, HIGH);
-
-	/*
-	 * welcome MSG
-	 */
-	for (int i = 0; i < NUM_LEDS; i++){
-		leds[i]=CRGB::Blue;
-		FastLED.show();
-		delay(5);
-		leds[i]=CRGB::Black;
-	}
-	delay(1000);
-	
-	/*
-	 * DieBass logo
-	 */
-	int logo[NUM_LEDS] = {
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,1,0,0,0,1,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,
-		0,1,1,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,
-		0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,
-		0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,
-		0,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0
-	};
-	for (int i = 0; i < NUM_LEDS; i++){
-		if (logo[i])
-			leds[i]=CRGB::Blue;
-		else
-			leds[i]=CRGB::Black;
-	}
-	FastLED.show();
-	delay(2000);
-	for (int i = 0; i < NUM_LEDS; i++){
-		if (logo[i])
-			leds[i]=CRGB::Black;
-		else
-			leds[i]=CRGB::Blue;
-	}
-	FastLED.show();
-	delay(1000);
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+  pinMode(brightnessThreasholdPin, INPUT);
+  #ifdef DEBUG
+  delay(1000);
+  Serial.begin(9600);
+  delay(1000);
+  Serial.println("START");
+  #endif
+  initDisplay();
+	Wire.begin();
+  delay(100);
+  requestLedState();
+  //Indicate Setup done
+  digitalWrite(13, HIGH);
+  waitForMusic();
 }
 
 void loop() {
-	/*
-	 * will contain mapped values
-	 */
-	int values[COLS]; //30
+  bool silence = true;
 
-	/*
-	 * Threashold value
-	 */
-	int t = analogRead(analogThreasholdPin);
-	t = t ? t : THREASHOLD_DEFAULT; //default
+  /* request new state */
+  requestLedState();
 
-	/*
-	 * init the array
-	 */
-	for(int i = 0; i < COLS; i++)
-		values[i] = 0;
+  adjustBrightness();
 
-	/*
-	 * reset the MSGEQ7
-	 */
-	digitalWrite(resetPin, HIGH);
-	digitalWrite(resetPin, LOW);
-
-	/*
-	 * read the values for all 7 bands
-	 * and store the mapped value into the array
-	 */
-	for(int i=2; i < COLS; i+=4){
-		digitalWrite(strobePin, LOW);
-		delay(1);
-		int val = analogRead(analogPin);
-		//keep in range
-		val = val < 10 ? 0 :  //noise filter
-			val > t ? t : // threashold filter (max) 
-			val;
-		val = val * ROWS / t;
-		values[i-1] = values[i] = values[i+1] = val; 
-		digitalWrite(strobePin, HIGH);
-	}
-
-	/*
-	 * interpolate
-	 */
-
-	//first	
-	values[0] = values[1] / 2;
-	//intermediate
-	for(int i=4; i<COLS; i += 4){
-		values[i] = (values[i-1] + values[i+1]) / 2 ;
-	}
-	//last-two
-	values[COLS-2] = values[COLS-2] % 2; //ceil
-	values[COLS-1] = values[COLS-2] / 2; //floor
-
-	/*
-	 * light the LEDs
-	 */
-	for(int freq=0; freq < COLS; freq++){
-		if(values[freq]>0){
-			for(int depth = 0 ; depth < values[freq]-1; depth++)
-				leds[ledsNumber[depth] + freq] = colors[colorPointer];
-
-			leds[ledsNumber[values[freq]-1]+freq] = colors[colorPointer == 0 ? COLOR_AMOUNT : colorPointer - 1 ];//0x00FF00;
+	/* light the LEDs */
+	for(int band=0; band<cols; band++){
+    // light up the bars
+		if((led_states.bands[band]>0) && (led_states.bands[band]<=rows)) {
+			for(int depth = 0 ; depth < led_states.bands[band]-1; depth++)
+				leds[ledsNumber[depth] + band] = colors[color_pointer];
+			leds[ledsNumber[led_states.bands[band]-1]+band] = colors[color_pointer == 0 ? color_amount : color_pointer - 1 ];
+      silence = false;
+      silence_counter = 0;
 		}
-		if(values[freq] < ROWS)
-			for(int depth = values[freq]; depth < ROWS; depth++)
-				leds[ledsNumber[depth] + freq] = CRGB::Black;
+    // delete everything above current bar
+		if(led_states.bands[band] < rows)
+			for(int depth = led_states.bands[band]; depth < rows; depth++)
+				leds[ledsNumber[depth] + band] = CRGB::Black;
 	}
-	FastLED.show();
+  if(silence_counter <= silence_threashold && silence)
+    silence_counter++;
+  else if(silence_counter > silence_threashold) {
+    waitForMusic();
+  }
+  FastLED.show();
 
-	
-	/*
-	 * move colorpointer, if necessary
-	 */
-	for(int i=0; i<4; i++)
-		if(values[i++] > ROWS/5 && loopCounter < LOOP_THREASHOLD){
-			if(colorPointer == COLOR_AMOUNT)
-				colorPointer = 0;
-			else
-				colorPointer++;
-			loopCounter = 2 + loopCounter * 2;
-			break;
+	/* move colorpointer, if the first eight bands exceed threashold */
+	for(int i=0; i<8; i++)
+		if(led_states.bands[i] > bass_threashold) {
+		  if(loop_counter > color_loop_threashold){
+			  if(color_pointer >= color_amount)
+				  color_pointer = 0;
+			  else
+				  color_pointer++;
+			  loop_counter = 1;
+			  break;
+		  }
+      /* increase loop_counter by 2 because of decrease below */
+      else loop_counter+=2;
 		}
-	if(loopCounter > 0)
-		loopCounter--;
+
+  if(loop_counter>0)
+    loop_counter--;
+
+  #ifdef DEBUG
+  Serial.print("loop_counter: ");
+  Serial.println(loop_counter);
+  #endif
+
+  delay(5);
 }
