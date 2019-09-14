@@ -4,36 +4,46 @@
 //#define DEBUG
 
 /* definition of LED grid */
-const int cols = 24;
-const int rows = 9;
+const int cols = 38;
+const int rows = 13;
 const int num_leds = rows*cols;
 
 /*this is where the row of 15 leds stars on the whole strip*/
-int ledsNumber[rows] = {
-  192,
-  168,
-  144,
-  120,
-  96,
-  72,
-  48,
-  24,
-  0
+int ledsNumber[] = {
+  0,
+  38,
+  76,
+  114,
+  152,
+  190,
+  228,
+  266,
+  304,
+  342,
+  380,
+  418,
+  456
 };
 
 /*
  * Bass logo
  */
-int logo[num_leds] = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,1,0,0,0,1,0,0,1,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,
-  0,1,1,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,
-  0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,
-  0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,
-  0,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,0,1,1,1,0,0,0
-};
+ byte logo[] = {0,0,0,0,0,15,159,199,3,65,36,2,2,161,16,137,128,64,68,68,34,28,142,36,137,136,64,192,198,193,35,16,0,144,0,240,120,0,68,0,0,0,0,17,0,0,0,64,4,0,0,0,240,0,0,0,0,0,0,0,0,0};
+/*int logo[num_leds] = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,
+  0,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,0,1,1,0,
+  0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0,1,0,0,1,0,0,1,
+  0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,
+  0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,
+  0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,0,0,1,1,1,1,0,0,0,1,1,1,1,0,0,0,0,0,0,1,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+};*/
 unsigned const int silence_threashold = 500;
 unsigned int silence_counter = 0;
 bool silence = false;
@@ -49,7 +59,7 @@ int led_brightness = 50;
 const int brightnessThreasholdPin = 1;
 
 /* Colors */
-const int color_amount = 7;
+const int color_amount = 6;
 int color_pointer = 0;
 
 /* Color Loop */
@@ -58,7 +68,7 @@ unsigned int loop_counter = 8; //toAvoid, that the colors are changed to fast.
 const int bass_threashold = rows-2;
 
 /* definition of all colors used in the loop */
-CRGB colors[color_amount]{
+CRGB colors[color_amount+1]{
 	0xFF8000,
 	0x80FF00,       
 	0x8000FF,       
@@ -74,7 +84,10 @@ union band_states {
   byte data[cols];
 } led_states;
 
+const int i2c_length = cols / 2;
+
 /* function initialises display and prints welcome message */
+/* uses 12 bytes of RAM */
 void initDisplay() {
   FastLED.addLeds<WS2812B, leds_pin, GRB>(leds, num_leds);
   adjustBrightness();
@@ -84,7 +97,7 @@ void initDisplay() {
   for (int i = 0; i < num_leds; i++){
     leds[i]=CRGB::Blue;
     FastLED.show();
-    delay(5);
+    delay(1);
     leds[i]=CRGB::Black;
   }
   delay(500);
@@ -92,7 +105,8 @@ void initDisplay() {
   
   /* print logo inverted again for LED sanity check */
   for (int i = 0; i < num_leds; i++){
-    if (logo[i])
+    /* compare variable to bitmask */
+    if (logo[(int)(i/8)] & ((byte)1<<(i % 8)))
       leds[i]=CRGB::Black;
     else
       leds[i]=CRGB::Blue;
@@ -103,9 +117,12 @@ void initDisplay() {
   delay(2000);
 }
 
+/* using 4 bytes of RAM */
+/* using 12 bytes of RAM */
 void showLogo(){
   for (int i = 0; i < num_leds; i++){
-    if (logo[i])
+    /* compare variable to bitmask */
+    if (logo[(int)(i/8)] & ((byte)1<<(i % 8)))
       leds[i]=CRGB::Blue;
     else
       leds[i]=CRGB::Black;
@@ -115,9 +132,21 @@ void showLogo(){
 
 /* function to request current state of LEDs over i2c */
 void requestLedState() {
-  Wire.requestFrom(0, cols);
-  for (int i=0; i<cols; i++) {
-    led_states.data[i] = Wire.read();
+  int pos = 0;
+  Wire.requestFrom(0, i2c_length);
+  while(Wire.available())  
+  {
+    led_states.data[pos++] = Wire.read();
+    #ifdef DEBUG
+    Serial.print(" ");
+    Serial.print(led_states.data[i]);
+    Serial.print(" ");
+    #endif
+  }
+  Wire.requestFrom(0, i2c_length);
+  while(Wire.available())  
+  {
+    led_states.data[pos++] = Wire.read();
     #ifdef DEBUG
     Serial.print(" ");
     Serial.print(led_states.data[i]);
@@ -129,6 +158,7 @@ void requestLedState() {
   #endif
 }
 
+/* Using 26 bytes of RAM */
 void waitForMusic() {
   bool brightness_increase = false;
   unsigned int brightness_cur = 0;
@@ -140,7 +170,7 @@ void waitForMusic() {
   #endif
   
   while(1) {
-    if (request_delay_counter > 49) {
+    if (request_delay_counter > 20) {
       request_delay_counter = 0;
       /* request new state */
       requestLedState();
@@ -189,11 +219,13 @@ void waitForMusic() {
   }
 }
 
+/* Using 4 bytes of RAM */
 void clearDisplay() {
   for (int i = 0; i < num_leds; i++)
     leds[i]=CRGB::Black;
 }
 
+/* Using 4 bytes of RAM */
 void adjustBrightness() {
   /* map 0 - 1023 -> 0 - 255 */
   int val = analogRead(brightnessThreasholdPin) / 4;
@@ -216,6 +248,7 @@ void setup() {
   #endif
   initDisplay();
 	Wire.begin();
+  Wire.setClock(400000);
   delay(100);
   requestLedState();
   //Indicate Setup done
@@ -223,6 +256,7 @@ void setup() {
   waitForMusic();
 }
 
+/* Using 27 bytes of RAM */
 void loop() {
   bool silence = true;
 
@@ -237,7 +271,7 @@ void loop() {
 		if((led_states.bands[band]>0) && (led_states.bands[band]<=rows)) {
 			for(int depth = 0 ; depth < led_states.bands[band]-1; depth++)
 				leds[ledsNumber[depth] + band] = colors[color_pointer];
-			leds[ledsNumber[led_states.bands[band]-1]+band] = colors[color_pointer == 0 ? color_amount : color_pointer - 1 ];
+			leds[ledsNumber[led_states.bands[band]-1]+band] = colors[color_pointer == 0 ? (color_amount)  : color_pointer - 1 ];
       silence = false;
       silence_counter = 0;
 		}
